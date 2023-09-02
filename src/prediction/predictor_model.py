@@ -1,6 +1,6 @@
 import os
-import tempfile
 import warnings
+import tempfile
 from typing import Optional
 
 import joblib
@@ -52,17 +52,6 @@ class Classifier:
         self.model = None
         self._is_trained = False
 
-    # def build_model(self) -> CatBoostClassifier:
-    #     """Build a new binary classifier."""
-    #     model = CatBoostClassifier(
-    #         loss_function='Logloss',
-    #         learning_rate=self.learning_rate,
-    #         iterations=self.iterations,
-    #         depth=self.depth,
-    #         l2_leaf_reg=self.l2_leaf_reg
-    #     )
-    #     return model
-
     def fit(self, train_inputs: pd.DataFrame, train_targets: pd.Series) -> None:
         """Fit the binary classifier to the training data.
 
@@ -72,12 +61,12 @@ class Classifier:
         """
         with tempfile.TemporaryDirectory() as tempdir:
             self.model = CatBoostClassifier(
-                loss_function="Logloss",
+                loss_function='Logloss',
                 learning_rate=self.learning_rate,
                 iterations=self.iterations,
                 depth=self.depth,
                 l2_leaf_reg=self.l2_leaf_reg,
-                train_dir=tempdir,
+                train_dir=tempdir
             )
             self.model.fit(train_inputs, train_targets)
         self._is_trained = True
@@ -138,12 +127,13 @@ class Classifier:
         return model
 
     def __str__(self):
+        # sort params alphabetically for unit test to run successfully
         return (
-            f"Model name: {self.model_name}\n"
-            f"learning_rate: {self.learning_rate}\n"
-            f"iterations: {self.iterations})\n"
-            f"depth: {self.depth})\n"
-            f"l2_leaf_reg: {self.l2_leaf_reg})\n"
+            f"Model name: {self.model_name} ("
+            f"depth: {self.depth}), "
+            f"iterations: {self.iterations}), "
+            f"l2_leaf_reg: {self.l2_leaf_reg}, "
+            f"learning_rate: {self.learning_rate})"
         )
 
 
