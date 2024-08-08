@@ -8,6 +8,7 @@ import numpy as np
 import pandas as pd
 from catboost import CatBoostClassifier
 from sklearn.exceptions import NotFittedError
+from sklearn.metrics import f1_score
 
 warnings.filterwarnings("ignore")
 
@@ -30,6 +31,7 @@ class Classifier:
         iterations: Optional[int] = 100,
         depth: Optional[int] = 6,
         l2_leaf_reg: Optional[float] = 3.0,
+        prob_threshold: Optional[float] = 0.5,
         **kwargs,
     ):
         """Construct a new Catboost binary classifier.
@@ -49,6 +51,7 @@ class Classifier:
         self.iterations = int(iterations)
         self.depth = int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
+        self.prob_threshold = float(prob_threshold)
         self.model = None
         self._is_trained = False
 
@@ -61,12 +64,12 @@ class Classifier:
         """
         with tempfile.TemporaryDirectory() as tempdir:
             self.model = CatBoostClassifier(
-                loss_function='Logloss',
+                loss_function="Logloss",
                 learning_rate=self.learning_rate,
                 iterations=self.iterations,
                 depth=self.depth,
                 l2_leaf_reg=self.l2_leaf_reg,
-                train_dir=tempdir
+                train_dir=tempdir,
             )
             self.model.fit(train_inputs, train_targets)
         self._is_trained = True
@@ -92,16 +95,20 @@ class Classifier:
         return self.model.predict_proba(inputs)
 
     def evaluate(self, test_inputs: pd.DataFrame, test_targets: pd.Series) -> float:
-        """Evaluate the binary classifier and return the accuracy.
+        """Evaluate the classifier and return the accuracy.
 
         Args:
             test_inputs (pandas.DataFrame): The features of the test data.
             test_targets (pandas.Series): The labels of the test data.
         Returns:
-            float: The accuracy of the binary classifier.
+            float: The accuracy of the classifier.
         """
         if self.model is not None:
-            return self.model.score(test_inputs, test_targets)
+            prob = self.predict_proba(test_inputs)
+            labels = prob[:, 1] > self.prob_threshold
+
+            return f1_score(test_targets, labels)
+
         raise NotFittedError("Model is not fitted yet.")
 
     def save(self, model_dir_path: str) -> None:
