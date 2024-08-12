@@ -30,6 +30,7 @@ class Classifier:
         iterations: Optional[int] = 100,
         depth: Optional[int] = 6,
         l2_leaf_reg: Optional[float] = 3.0,
+        positive_class_weight: Optional[float] = 1,
         **kwargs,
     ):
         """Construct a new Catboost binary classifier.
@@ -49,6 +50,7 @@ class Classifier:
         self.iterations = int(iterations)
         self.depth = int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
+        self.positive_class_weight = float(positive_class_weight)
         self.model = None
         self._is_trained = False
 
@@ -61,12 +63,13 @@ class Classifier:
         """
         with tempfile.TemporaryDirectory() as tempdir:
             self.model = CatBoostClassifier(
-                loss_function='Logloss',
+                loss_function="Logloss",
                 learning_rate=self.learning_rate,
                 iterations=self.iterations,
                 depth=self.depth,
                 l2_leaf_reg=self.l2_leaf_reg,
-                train_dir=tempdir
+                train_dir=tempdir,
+                class_weights={0: 1, 1: self.positive_class_weight},
             )
             self.model.fit(train_inputs, train_targets)
         self._is_trained = True
