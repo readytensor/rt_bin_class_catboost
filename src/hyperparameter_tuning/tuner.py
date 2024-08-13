@@ -84,6 +84,7 @@ class HyperParameterTuner:
             is_minimize:  Whether the metric should be minimized or maximized.
                 Defaults to True.
         """
+        self.classifier = None
         self.default_hyperparameters = default_hyperparameters
         self.hpt_specs = hpt_specs
         self.hpt_results_dir_path = hpt_results_dir_path
@@ -124,10 +125,16 @@ class HyperParameterTuner:
             its performance"""
             # convert list of HP values into a dictionary of name:val pairs
             hyperparameters = dict(zip(self.hyperparameter_names, trial))
-            # train model
-            classifier = train_predictor_model(train_X, train_y, hyperparameters)
-            # evaluate the model
-            score = round(evaluate_predictor_model(classifier, valid_X, valid_y), 6)
+            if self.classifier is None:
+                # train model
+                self.classifier = train_predictor_model(
+                    train_X, train_y, hyperparameters
+                )
+            else:
+                self.classifier.prob_threshold = hyperparameters["prob_threshold"]
+            score = round(
+                evaluate_predictor_model(self.classifier, valid_X, valid_y), 6
+            )
             if np.isnan(score) or math.isinf(score):
                 # sometimes loss becomes inf/na, so use a large "bad" value
                 score = 1.0e6 if self.is_minimize else -1.0e6
@@ -202,8 +209,6 @@ class HyperParameterTuner:
         Returns:
             A dictionary containing the best model name, hyperparameters, and score.
         """
-        # Use 1/3 of the trials to explore the space initially, but at most 5 trials
-        n_initial_points = max(1, min(self.num_trials // 3, 5))
         objective_func = self._get_objective_func(train_X, train_y, valid_X, valid_y)
 
         values = self.hpt_space[0].categories
