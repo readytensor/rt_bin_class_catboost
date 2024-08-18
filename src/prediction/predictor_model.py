@@ -94,20 +94,31 @@ class Classifier:
         """
         return self.model.predict_proba(inputs)
 
-    def evaluate(self, test_inputs: pd.DataFrame, test_targets: pd.Series) -> float:
+    def evaluate(
+        self,
+        test_inputs: pd.DataFrame,
+        test_targets: pd.Series,
+        decision_threshold: float = -1,
+    ) -> float:
         """Evaluate the classifier and return the accuracy.
 
         Args:
             test_inputs (pandas.DataFrame): The features of the test data.
             test_targets (pandas.Series): The labels of the test data.
+            decision_threshold (Optional float): Decision threshold for the
+                positive class.
+                Value -1 indicates use the default set when model was
+                instantiated.
         Returns:
             float: The accuracy of the classifier.
         """
+        if decision_threshold == -1:
+            decision_threshold = self.decision_threshold
         if self.model is not None:
             prob = self.predict_proba(test_inputs)
-            labels = prob[:, 1] >= self.decision_threshold
-
-            return f1_score(test_targets, labels)
+            labels = prob[:, 1] > decision_threshold
+            score = f1_score(test_targets, labels)
+            return score
 
         raise NotFittedError("Model is not fitted yet.")
 
@@ -210,7 +221,10 @@ def load_predictor_model(predictor_dir_path: str) -> Classifier:
 
 
 def evaluate_predictor_model(
-    model: Classifier, x_test: pd.DataFrame, y_test: pd.Series
+    model: Classifier,
+    x_test: pd.DataFrame,
+    y_test: pd.Series,
+    decision_threshold: float = -1,
 ) -> float:
     """
     Evaluate the classifier model and return the accuracy.
@@ -219,8 +233,23 @@ def evaluate_predictor_model(
         model (Classifier): The classifier model.
         x_test (pd.DataFrame): The features of the test data.
         y_test (pd.Series): The labels of the test data.
+        decision_threshold (Union(optional, float)): Decision threshold
+                for predicted label.
+                Value -1 indicates use the default set when model was
+                instantiated.
 
     Returns:
         float: The accuracy of the classifier model.
     """
-    return model.evaluate(x_test, y_test)
+    return model.evaluate(x_test, y_test, decision_threshold)
+
+
+def set_decision_threshold(model: Classifier, decision_threshold: float) -> None:
+    """
+    Set the decision threshold for the classifier model.
+
+    Args:
+        model (Classifier): The classifier model.
+        decision_threshold (float): The decision threshold.
+    """
+    model.decision_threshold = decision_threshold
