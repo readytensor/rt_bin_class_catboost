@@ -31,7 +31,7 @@ class Classifier:
         iterations: Optional[int] = 100,
         depth: Optional[int] = 6,
         l2_leaf_reg: Optional[float] = 3.0,
-        prob_threshold: Optional[float] = 0.5,
+        decision_threshold: Optional[float] = 0.5,
         **kwargs,
     ):
         """Construct a new Catboost binary classifier.
@@ -51,7 +51,7 @@ class Classifier:
         self.iterations = int(iterations)
         self.depth = int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
-        self.prob_threshold = float(prob_threshold)
+        self.decision_threshold = float(decision_threshold)
         self.model = None
         self._is_trained = False
 
@@ -105,7 +105,7 @@ class Classifier:
         """
         if self.model is not None:
             prob = self.predict_proba(test_inputs)
-            labels = prob[:, 1] > self.prob_threshold
+            labels = prob[:, 1] >= self.decision_threshold
 
             return f1_score(test_targets, labels)
 
