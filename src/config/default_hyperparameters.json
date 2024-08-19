@@ -3,5 +3,6 @@
   "iterations": 100,
   "depth": 6,
   "l2_leaf_reg": 3,
-  "decision_threshold": 0.25
+  "decision_threshold": 0.5,
+  "positive_class_weight": 1.0
 }

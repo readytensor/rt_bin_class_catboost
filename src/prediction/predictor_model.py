@@ -32,6 +32,7 @@ class Classifier:
         depth: Optional[int] = 6,
         l2_leaf_reg: Optional[float] = 3.0,
         decision_threshold: Optional[float] = 0.5,
+        positive_class_weight: Optional[float] = 1.0,
         **kwargs,
     ):
         """Construct a new Catboost binary classifier.
@@ -46,12 +47,17 @@ class Classifier:
             l2_leaf_reg (float, optional): Coefficient at the L2 regularization term of
                 the cost function
                 Defaults to 3.0.
+            decision_threshold (float, optional): The decision threshold for
+                the positive class. Defaults to 0.5.
+            positive_class_weight (float, optional): The weight of the positive
+                class. Defaults to 1.0.
         """
         self.learning_rate = float(learning_rate)
         self.iterations = int(iterations)
         self.depth = int(depth)
         self.l2_leaf_reg = float(l2_leaf_reg)
         self.decision_threshold = float(decision_threshold)
+        self.positive_class_weight = float(positive_class_weight)
         self.model = None
         self._is_trained = False
 
@@ -70,19 +76,29 @@ class Classifier:
                 depth=self.depth,
                 l2_leaf_reg=self.l2_leaf_reg,
                 train_dir=tempdir,
+                class_weights={0: 1, 1: self.positive_class_weight},
             )
             self.model.fit(train_inputs, train_targets)
         self._is_trained = True
 
-    def predict(self, inputs: pd.DataFrame) -> np.ndarray:
+    def predict(self, inputs: pd.DataFrame, decision_threshold: float = -1,) -> np.ndarray:
         """Predict class labels for the given data.
 
         Args:
             inputs (pandas.DataFrame): The input data.
+            decision_threshold (Optional float): Decision threshold for the
+                positive class.
+                Value -1 indicates use the default set when model was
+                instantiated.
         Returns:
             numpy.ndarray: The predicted class labels.
         """
-        return self.model.predict(inputs)
+        if decision_threshold == -1:
+            decision_threshold = self.decision_threshold
+        if self.model is not None:
+            prob = self.predict_proba(inputs)
+            labels = prob[:, 1] > decision_threshold
+        return labels
 
     def predict_proba(self, inputs: pd.DataFrame) -> np.ndarray:
         """Predict class probabilities for the given data.
