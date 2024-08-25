@@ -136,7 +136,7 @@ def run_batch_predictions(
             model_config["prediction_field_name"],
             test_data[data_schema.id],
             data_schema.id,
-            return_probs=False,
+            return_probs=True,
             decision_threshold=predictor_model.decision_threshold,
         )
 
